@@ -2,6 +2,18 @@
 using Microsoft.WindowsAPICodePack.Shell;
 
 int year = 2023; // you still have to change vacation dates manually
+
+// Define the date ranges for deletion
+var vacationDates = new List<Tuple<DateTime, DateTime>>()
+{
+    new(new(year, 1, 30), new(year, 2, 4)),
+    new(new(year, 4, 12), new(year, 4, 15)),
+    new(new(year, 6, 9), new(year, 6, 17)),
+    new(new(year, 8, 4), new(year, 8, 7)),
+    new(new(year, 9, 24), new(year, 10, 1)),
+    new(new(year, 11, 6), new(year, 11, 10)),
+};
+
 int fileCount = 0;
 int vacationCount = 0;
 int janCount = 0;
@@ -28,17 +40,6 @@ if (!Path.Exists(janPath)) Directory.CreateDirectory(janPath);
 if (!Path.Exists(aprPath)) Directory.CreateDirectory(aprPath);
 if (!Path.Exists(julPath)) Directory.CreateDirectory(julPath);
 if (!Path.Exists(octPath)) Directory.CreateDirectory(octPath);
-
-// Define the date ranges for deletion
-var vacationDates = new List<Tuple<DateTime, DateTime>>()
-        {
-            new(new(year, 1, 30), new(year, 2, 4)),
-            new(new(year, 4, 12), new(year, 4, 15)),
-            new(new(year, 6, 9), new(year, 6, 17)),
-            new(new(year, 8, 4), new(year, 8, 7)),
-            new(new(year, 9, 24), new(year, 10, 1)),
-            new(new(year, 11, 6), new(year, 11, 10)),
-        };
 
 foreach (string path in Directory.GetFiles(directoryPath))
 {
