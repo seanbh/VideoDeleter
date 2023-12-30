@@ -7,72 +7,122 @@ class Program
 {
     static void Main(string[] args)
     {
+        int year = 2023; // you still have to change vacation dates manually
         int fileCount = 0;
-        int movedCount = 0;
-        int endingFileCount = 0;
+        int vacationCount = 0;
+        int janCount = 0;
+        int aprCount = 0;
+        int julCount = 0;
+        int octCount = 0;
+        int noDateCount = 0;
+        int couldNotMoveCount = 0;
 
-        string directoryPath = @"C:\Users\seanh\Pictures\Video Projects\Stage\THESE_HAVE_BEEN_COMBINED_INTO_MPEGS\2023";
+        string directoryPath = @$"C:\Users\seanh\Pictures\Video Projects\Stage\THESE_HAVE_BEEN_COMBINED_INTO_MPEGS\{year}";
         if (!Path.Exists(directoryPath)) {
             Console.WriteLine($"Path {directoryPath} does not exist");
             return;
         }
 
         string vacationPath = Path.Combine(directoryPath, "Vacations");
-        if(!Path.Exists(vacationPath))
-        {
-            Directory.CreateDirectory(vacationPath);
-        }
+        string janPath = Path.Combine(directoryPath, "Jan-Mar");
+        string aprPath = Path.Combine(directoryPath, "Apr-Jun");
+        string julPath = Path.Combine(directoryPath, "Jul-Sep");
+        string octPath = Path.Combine(directoryPath, "Oct-Dec");
+        if(!Path.Exists(vacationPath)) Directory.CreateDirectory(vacationPath);
+        if(!Path.Exists(janPath)) Directory.CreateDirectory(janPath);
+        if(!Path.Exists(aprPath)) Directory.CreateDirectory(aprPath);
+        if(!Path.Exists(julPath)) Directory.CreateDirectory(julPath);
+        if(!Path.Exists(octPath)) Directory.CreateDirectory(octPath);
 
         // Define the date ranges for deletion
         var vacationDates = new List<Tuple<DateTime, DateTime>>()
         {
-            new(new(2023, 1, 30), new(2023, 2, 4)),
-            new(new(2023, 4, 12), new(2023, 4, 15)),
-            new(new(2023, 6, 9), new(2023, 6, 17)),
-            new(new(2023, 8, 4), new(2023, 8, 7)),
-            new(new(2023, 9, 24), new(2023, 10, 1)),
-            new(new(2023, 11, 6), new(2023, 11, 10)),
+            new(new(year, 1, 30), new(year, 2, 4)),
+            new(new(year, 4, 12), new(year, 4, 15)),
+            new(new(year, 6, 9), new(year, 6, 17)),
+            new(new(year, 8, 4), new(year, 8, 7)),
+            new(new(year, 9, 24), new(year, 10, 1)),
+            new(new(year, 11, 6), new(year, 11, 10)),
         };
 
         foreach (string path in Directory.GetFiles(directoryPath))
         {
             fileCount++;
+            var movedToVacation = false;
 
-            // Get the media created date
             DateTime? mediaCreatedDate = GetMediaCreatedDate(path);
 
-            // Check if the media created date is within the specified ranges
             if (mediaCreatedDate.HasValue)
             {
                 foreach(var dateRange in vacationDates)
                 {
-                    if(mediaCreatedDate >= dateRange.Item1 && mediaCreatedDate <= dateRange.Item2)
+                    if(mediaCreatedDate >= dateRange.Item1 && mediaCreatedDate < dateRange.Item2.AddDays(1) && File.Exists(path))
                     {
-                        // move the file
-                        try
-                        {
-                            File.Move(path, Path.Combine(vacationPath, Path.GetFileName(path)));
-                            Console.WriteLine($"Moved: {Path.GetFileName(path)} with date {mediaCreatedDate.Value}");
-                            movedCount++;
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"Error deleting {path}: {ex.Message}");
-                        }
+                        MoveFile(vacationPath, path, mediaCreatedDate.Value);
+                        vacationCount++;
+                        movedToVacation = true;
+                    }                    
+                }      
+
+                if(!movedToVacation && File.Exists(path))
+                {
+                    if(mediaCreatedDate >= new DateTime(year, 1, 1) && mediaCreatedDate < new DateTime(year, 4, 1))
+                    {
+                        MoveFile(janPath, path, mediaCreatedDate.Value);
+                        janCount++;
                     }
-                }                
+                    else if(mediaCreatedDate >= new DateTime(year, 4, 1) && mediaCreatedDate <= new DateTime(year, 7, 1))
+                    {
+                        MoveFile(aprPath, path, mediaCreatedDate.Value);
+                        aprCount++;
+                    }
+                    else if(mediaCreatedDate >= new DateTime(year, 7, 1) && mediaCreatedDate <= new DateTime(year, 10, 1))
+                    {
+                        MoveFile(julPath, path, mediaCreatedDate.Value);
+                        julCount++;
+                    }
+                    else if(mediaCreatedDate >= new DateTime(year, 10, 1) && mediaCreatedDate <= new DateTime(year + 1, 1, 1))
+                    {
+                        MoveFile(octPath, path, mediaCreatedDate.Value);
+                        octCount++;
+                    }
+                    else 
+                    {
+                        Console.WriteLine($"Could not move : {path} with date {mediaCreatedDate.Value}");
+                        couldNotMoveCount++;
+                    }
+                }          
+            }
+            else 
+            {
+                Console.WriteLine($"Could not get file date for {path}");
+                noDateCount++;
             }
         }
 
-        Console.WriteLine($"Beginning File Count: {fileCount}");
-        Console.WriteLine($"Deleted File Count: {movedCount}");
+        Console.WriteLine($"File Count: {fileCount}");
+        Console.WriteLine($"Vacation File Count: {vacationCount}");     
+        Console.WriteLine($"Jan-Mar File Count: {janCount}");     
+        Console.WriteLine($"Apr-Jun File Count: {aprCount}");     
+        Console.WriteLine($"Jul-Sep File Count: {julCount}");     
+        Console.WriteLine($"Oct-Dec File Count: {octCount}");     
+        Console.WriteLine($"No Media Date File Count: {noDateCount}");     
+        Console.WriteLine($"Could not move File Count: {couldNotMoveCount}");     
+        Console.WriteLine($"Total Processed: {vacationCount + janCount + aprCount + julCount + octCount + noDateCount + couldNotMoveCount}");     
+    }
 
-        
-        foreach (string path in Directory.GetFiles(directoryPath))
+    private static void MoveFile(string destPath, string path, DateTime mediaCreatedDate)
+    {
+        // move the file
+        try
         {
-            endingFileCount++;
+            File.Move(path, Path.Combine(destPath, Path.GetFileName(path)));
+            Console.WriteLine($"Moved: {Path.GetFileName(path)} with date {mediaCreatedDate}");
         }
-        Console.WriteLine($"Ending File Count: {endingFileCount}");
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error moving {path}: {ex.Message}");
+        }
     }
 
     static DateTime? GetMediaCreatedDate(string imagePath)
