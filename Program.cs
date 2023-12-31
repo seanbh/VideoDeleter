@@ -96,6 +96,41 @@ foreach (string path in Directory.GetFiles(directoryPath))
     }
 }
 
+Console.WriteLine();
+Console.WriteLine("Doing photos now...");
+
+int picCount = 0;
+int picMovedCount = 0;
+int noPicDateCount = 0;
+
+var picPath = @$"F:\Pictures\{year}";
+foreach(string path in Directory.GetFiles(picPath))
+{
+    picCount++;
+
+    DateTime? mediaCreatedDate = GetDateTakenDate(path);
+
+    if (mediaCreatedDate.HasValue)
+    {
+        var month = mediaCreatedDate.Value.ToString("MMMM");
+        var monthPath = Path.Combine(picPath, month);
+        
+        if (!Path.Exists(month)) Directory.CreateDirectory(monthPath);
+
+        File.Move(path, Path.Combine(monthPath, Path.GetFileName(path)));
+        Console.WriteLine($"Moved: {Path.GetFileName(path)} with date {mediaCreatedDate}");
+
+        picMovedCount++;
+    }
+    else
+    {
+        Console.WriteLine($"Could not get file date for {path}");
+        noPicDateCount++;
+    }
+}
+
+Console.WriteLine();
+Console.WriteLine("Video Totals");
 Console.WriteLine($"File Count: {fileCount}");
 Console.WriteLine($"Vacation File Count: {vacationCount}");
 Console.WriteLine($"Jan-Mar File Count: {janCount}");
@@ -105,6 +140,12 @@ Console.WriteLine($"Oct-Dec File Count: {octCount}");
 Console.WriteLine($"No Media Date File Count: {noDateCount}");
 Console.WriteLine($"Could not move File Count: {couldNotMoveCount}");
 Console.WriteLine($"Total Processed: {vacationCount + janCount + aprCount + julCount + octCount + noDateCount + couldNotMoveCount}");
+
+Console.WriteLine();
+Console.WriteLine("Photo Totals");
+Console.WriteLine($"File Count: {picCount}");
+Console.WriteLine($"Moved Count: {picMovedCount}");
+Console.WriteLine($"Could Not Move Count: {noPicDateCount}");
 
 void MoveFile(string destPath, string path, DateTime mediaCreatedDate)
 {
@@ -120,11 +161,20 @@ void MoveFile(string destPath, string path, DateTime mediaCreatedDate)
     }
 }
 
-DateTime? GetMediaCreatedDate(string imagePath)
+DateTime? GetMediaCreatedDate(string filePath)
 {
-    ShellObject shell = ShellObject.FromParsingName(imagePath);
+    ShellObject shell = ShellObject.FromParsingName(filePath);
 
     var data = shell.Properties.System.Media.DateEncoded;
+
+    return data?.Value;
+}
+
+DateTime? GetDateTakenDate(string filePath)
+{
+    ShellObject shell = ShellObject.FromParsingName(filePath);
+
+    var data = shell.Properties.System.Photo.DateTaken;
 
     return data?.Value;
 }
