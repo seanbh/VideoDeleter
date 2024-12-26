@@ -1,17 +1,16 @@
 ﻿
+using System.Diagnostics;
 using Microsoft.WindowsAPICodePack.Shell;
 
-int year = 2023; // you still have to change vacation dates manually
+int year = 2024; // you still have to change vacation dates manually
 
 // Define the date ranges for deletion
 var vacationDates = new List<Tuple<DateTime, DateTime>>()
 {
-    new(new(year, 1, 30), new(year, 2, 4)),
-    new(new(year, 4, 12), new(year, 4, 15)),
-    new(new(year, 6, 9), new(year, 6, 17)),
-    new(new(year, 8, 4), new(year, 8, 7)),
-    new(new(year, 9, 24), new(year, 10, 1)),
-    new(new(year, 11, 6), new(year, 11, 10)),
+    new(new(year, 3, 16), new(year, 3, 23)),
+    new(new(year, 6, 8), new(year, 6, 14)),
+    new(new(year, 7, 21), new(year, 7, 26)),
+    new(new(year, 10, 5), new(year, 10, 12))
 };
 
 int fileCount = 0;
@@ -47,6 +46,11 @@ foreach (string path in Directory.GetFiles(directoryPath))
     var movedToVacation = false;
 
     DateTime? mediaCreatedDate = GetMediaCreatedDate(path);
+
+    if (!mediaCreatedDate.HasValue)
+    {
+        mediaCreatedDate = GetDateUsingExif(path);
+    }
 
     if (mediaCreatedDate.HasValue)
     {
@@ -114,7 +118,7 @@ foreach (string path in Directory.GetFiles(directoryPath))
 //     {
 //         var month = mediaCreatedDate.Value.ToString("MMMM");
 //         var monthPath = Path.Combine(picPath, month);
-        
+
 //         if (!Path.Exists(month)) Directory.CreateDirectory(monthPath);
 
 //         File.Move(path, Path.Combine(monthPath, Path.GetFileName(path)));
@@ -153,7 +157,7 @@ void MoveFile(string destPath, string path, DateTime mediaCreatedDate)
     try
     {
         File.Move(path, Path.Combine(destPath, Path.GetFileName(path)));
-        Console.WriteLine($"Moved: {Path.GetFileName(path)} with date {mediaCreatedDate}");
+        Console.WriteLine($"Moved: {Path.GetFileName(path)} with date {mediaCreatedDate} to {destPath}");
     }
     catch (Exception ex)
     {
@@ -178,3 +182,43 @@ DateTime? GetDateTakenDate(string filePath)
 
     return data?.Value;
 }
+
+DateTime? GetDateUsingExif(string filePath)
+{
+    Console.WriteLine($"Could not get date, trying Exif...");
+
+    string exifToolPath = @"C:\Program Files\ExifTool\exiftool-13.10_64\exiftool.exe";
+    try
+    {
+        // Run ExifTool to update metadata
+        Process process = new()
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = exifToolPath,
+                Arguments = $"-overwrite_original \"-FileCreateDate<CreateDate\" \"{filePath}\"",
+                RedirectStandardOutput = false,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+
+        process.Start();
+        process.WaitForExit();
+
+        Console.WriteLine($"Updated metadata for: {filePath}");
+
+        var mediaCreatedDate = new FileInfo(filePath).CreationTime;
+
+        return mediaCreatedDate;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error processing file {filePath}: {ex.Message}");
+        return null;
+    }
+}
+
+
+
+
