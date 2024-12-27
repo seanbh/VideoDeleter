@@ -171,6 +171,22 @@ if (doPhotos)
     }
     else
     {
+        // Rename all directories from MMMM to MM_MMMM
+        foreach (string folder in Directory.GetDirectories(picPath))
+        {
+            DateTime folderDate;
+            if (DateTime.TryParseExact(Path.GetFileName(folder), "MMMM", null, System.Globalization.DateTimeStyles.None, out folderDate))
+            {
+                var newFolderName = folderDate.ToString("MM_MMMM");
+                var newFolderPath = Path.Combine(picPath, newFolderName);
+                if (!Directory.Exists(newFolderPath))
+                {
+                    Directory.Move(folder, newFolderPath);
+                    Console.WriteLine($"Renamed folder {folder} to {newFolderPath}");
+                }
+            }
+        }
+
         foreach (string path in Directory.GetFiles(picPath))
         {
             try
