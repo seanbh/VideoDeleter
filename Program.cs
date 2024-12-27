@@ -100,38 +100,43 @@ foreach (string path in Directory.GetFiles(directoryPath))
     }
 }
 
-// Console.WriteLine();
-// Console.WriteLine("Doing photos now...");
+Console.WriteLine();
+Console.WriteLine("Doing photos now...");
 
-// int picCount = 0;
-// int picMovedCount = 0;
-// int noPicDateCount = 0;
+int picCount = 0;
+int picMovedCount = 0;
+int noPicDateCount = 0;
 
-// var picPath = @$"F:\Pictures\{year}";
-// foreach(string path in Directory.GetFiles(picPath))
-// {
-//     picCount++;
+var picPath = @$"F:\Pictures\{year}";
+foreach (string path in Directory.GetFiles(picPath))
+{
+    picCount++;
 
-//     DateTime? mediaCreatedDate = GetDateTakenDate(path);
+    DateTime? takenDate = GetDateTakenDate(path);
 
-//     if (mediaCreatedDate.HasValue)
-//     {
-//         var month = mediaCreatedDate.Value.ToString("MMMM");
-//         var monthPath = Path.Combine(picPath, month);
+    if (!takenDate.HasValue)
+    {
+        takenDate = GetDateUsingExif(path);
+    }
 
-//         if (!Path.Exists(month)) Directory.CreateDirectory(monthPath);
+    if (takenDate.HasValue)
+    {
+        var month = takenDate.Value.ToString("MMMM");
+        var monthPath = Path.Combine(picPath, month);
 
-//         File.Move(path, Path.Combine(monthPath, Path.GetFileName(path)));
-//         Console.WriteLine($"Moved: {Path.GetFileName(path)} with date {mediaCreatedDate}");
+        if (!Path.Exists(month)) Directory.CreateDirectory(monthPath);
 
-//         picMovedCount++;
-//     }
-//     else
-//     {
-//         Console.WriteLine($"Could not get file date for {path}");
-//         noPicDateCount++;
-//     }
-// }
+        File.Move(path, Path.Combine(monthPath, Path.GetFileName(path)));
+        Console.WriteLine($"Moved: {Path.GetFileName(path)} with date {takenDate} to {monthPath}");
+
+        picMovedCount++;
+    }
+    else
+    {
+        Console.WriteLine($"Could not get file date for {path}");
+        noPicDateCount++;
+    }
+}
 
 Console.WriteLine();
 Console.WriteLine("Video Totals");
@@ -145,11 +150,11 @@ Console.WriteLine($"No Media Date File Count: {noDateCount}");
 Console.WriteLine($"Could not move File Count: {couldNotMoveCount}");
 Console.WriteLine($"Total Processed: {vacationCount + janCount + aprCount + julCount + octCount + noDateCount + couldNotMoveCount}");
 
-// Console.WriteLine();
-// Console.WriteLine("Photo Totals");
-// Console.WriteLine($"File Count: {picCount}");
-// Console.WriteLine($"Moved Count: {picMovedCount}");
-// Console.WriteLine($"Could Not Move Count: {noPicDateCount}");
+Console.WriteLine();
+Console.WriteLine("Photo Totals");
+Console.WriteLine($"File Count: {picCount}");
+Console.WriteLine($"Moved Count: {picMovedCount}");
+Console.WriteLine($"Could Not Move Count: {noPicDateCount}");
 
 void MoveFile(string destPath, string path, DateTime mediaCreatedDate)
 {
