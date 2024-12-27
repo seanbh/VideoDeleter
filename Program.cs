@@ -202,7 +202,7 @@ if (doPhotos)
 
                 if (takenDate.HasValue)
                 {
-                    var month = takenDate.Value.ToString("MMMM");
+                    var month = takenDate.Value.ToString("MM_MMMM");
                     var monthPath = Path.Combine(picPath, month);
 
                     if (!Path.Exists(month)) Directory.CreateDirectory(monthPath);
