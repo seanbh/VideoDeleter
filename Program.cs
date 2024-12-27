@@ -15,6 +15,7 @@ var vacationDates = new List<Tuple<DateTime, DateTime>>()
 
 bool doVideos = true;
 bool doPhotos = true;
+bool reversePhotos = false; // if true, will move all photos from subfolders to the main folder
 
 int fileCount = 0;
 int vacationCount = 0;
@@ -128,33 +129,60 @@ if (doPhotos)
     int noPicDateCount = 0;
 
     var picPath = @$"F:\Pictures\{year}";
-    foreach (string path in Directory.GetFiles(picPath))
+
+    if (reversePhotos)
     {
-        picCount++;
+        Console.WriteLine("Reversing photos...");
 
-        DateTime? takenDate = GetDateTakenDate(path);
-
-        if (!takenDate.HasValue)
+        foreach (string folder in Directory.GetDirectories(picPath))
         {
-            takenDate = GetDateUsingExif(path);
+            foreach (string path in Directory.GetFiles(folder))
+            {
+                picCount++;
+                File.Move(path, Path.Combine(picPath, Path.GetFileName(path)));
+                Console.WriteLine($"Moved: {Path.GetFileName(path)} to {picPath}");
+
+                picMovedCount++;
+            }
+
+            var left = Directory.GetFiles(folder).Length;
+            if (left == 0)
+            {
+                Console.WriteLine($"Deleting folder {folder}");
+                Directory.Delete(folder);
+            }
         }
-
-        if (takenDate.HasValue)
+    }
+    else
+    {
+        foreach (string path in Directory.GetFiles(picPath))
         {
-            var month = takenDate.Value.ToString("MMMM");
-            var monthPath = Path.Combine(picPath, month);
+            picCount++;
 
-            if (!Path.Exists(month)) Directory.CreateDirectory(monthPath);
+            DateTime? takenDate = GetDateTakenDate(path);
 
-            File.Move(path, Path.Combine(monthPath, Path.GetFileName(path)));
-            Console.WriteLine($"Moved: {Path.GetFileName(path)} with date {takenDate} to {monthPath}");
+            if (!takenDate.HasValue)
+            {
+                takenDate = GetDateUsingExif(path);
+            }
 
-            picMovedCount++;
-        }
-        else
-        {
-            Console.WriteLine($"Could not get file date for {path}");
-            noPicDateCount++;
+            if (takenDate.HasValue)
+            {
+                var month = takenDate.Value.ToString("MMMM");
+                var monthPath = Path.Combine(picPath, month);
+
+                if (!Path.Exists(month)) Directory.CreateDirectory(monthPath);
+
+                File.Move(path, Path.Combine(monthPath, Path.GetFileName(path)));
+                Console.WriteLine($"Moved: {Path.GetFileName(path)} with date {takenDate} to {monthPath}");
+
+                picMovedCount++;
+            }
+            else
+            {
+                Console.WriteLine($"Could not get file date for {path}");
+                noPicDateCount++;
+            }
         }
     }
 
