@@ -1,6 +1,5 @@
 ﻿
 using System.Diagnostics;
-using System.Linq.Expressions;
 using Microsoft.WindowsAPICodePack.Shell;
 
 int year = 2024; // you still have to change vacation dates manually
@@ -14,9 +13,9 @@ var vacationDates = new List<Tuple<DateTime, DateTime>>()
     new(new(year, 10, 5), new(year, 10, 12))
 };
 
-bool doVideos = true;
+bool doVideosByQuarter = true;
 bool doPhotos = true;
-bool reversePhotos = false; // if true, will move all photos from subfolders to the main folder
+bool doVideosByMonth = false;
 
 int fileCount = 0;
 int vacationCount = 0;
@@ -27,211 +26,26 @@ int octCount = 0;
 int noDateCount = 0;
 int couldNotMoveCount = 0;
 
-if (doVideos)
+string videoDirectoryPath = @$"C:\Users\seanh\Pictures\Video Projects\Stage\THESE_HAVE_BEEN_COMBINED_INTO_MPEGS\{year}";
+string photoDirectoryPath = $@"F:\Pictures\{year}";
+
+if (doVideosByQuarter)
 {
-    string directoryPath = @$"C:\Users\seanh\Pictures\Video Projects\Stage\THESE_HAVE_BEEN_COMBINED_INTO_MPEGS\{year}";
-    if (!Path.Exists(directoryPath))
-    {
-        Console.WriteLine($"Path {directoryPath} does not exist");
-        return;
-    }
-
-    string vacationPath = Path.Combine(directoryPath, "Vacations");
-    string janPath = Path.Combine(directoryPath, "Jan-Mar");
-    string aprPath = Path.Combine(directoryPath, "Apr-Jun");
-    string julPath = Path.Combine(directoryPath, "Jul-Sep");
-    string octPath = Path.Combine(directoryPath, "Oct-Dec");
-    if (!Path.Exists(vacationPath)) Directory.CreateDirectory(vacationPath);
-    if (!Path.Exists(janPath)) Directory.CreateDirectory(janPath);
-    if (!Path.Exists(aprPath)) Directory.CreateDirectory(aprPath);
-    if (!Path.Exists(julPath)) Directory.CreateDirectory(julPath);
-    if (!Path.Exists(octPath)) Directory.CreateDirectory(octPath);
-
-    foreach (string path in Directory.GetFiles(directoryPath))
-    {
-        try
-        {
-            fileCount++;
-            var movedToVacation = false;
-
-            DateTime? mediaCreatedDate = GetMediaCreatedDate(path);
-
-            if (!mediaCreatedDate.HasValue)
-            {
-                mediaCreatedDate = GetDateUsingExif(path);
-            }
-
-            if (mediaCreatedDate.HasValue)
-            {
-                foreach (var dateRange in vacationDates)
-                {
-                    if (mediaCreatedDate >= dateRange.Item1 && mediaCreatedDate < dateRange.Item2.AddDays(1) && File.Exists(path))
-                    {
-                        MoveFile(vacationPath, path, mediaCreatedDate.Value);
-                        vacationCount++;
-                        movedToVacation = true;
-                    }
-                }
-
-                if (!movedToVacation && File.Exists(path))
-                {
-                    if (mediaCreatedDate >= new DateTime(year, 1, 1) && mediaCreatedDate < new DateTime(year, 4, 1))
-                    {
-                        MoveFile(janPath, path, mediaCreatedDate.Value);
-                        janCount++;
-                    }
-                    else if (mediaCreatedDate >= new DateTime(year, 4, 1) && mediaCreatedDate <= new DateTime(year, 7, 1))
-                    {
-                        MoveFile(aprPath, path, mediaCreatedDate.Value);
-                        aprCount++;
-                    }
-                    else if (mediaCreatedDate >= new DateTime(year, 7, 1) && mediaCreatedDate <= new DateTime(year, 10, 1))
-                    {
-                        MoveFile(julPath, path, mediaCreatedDate.Value);
-                        julCount++;
-                    }
-                    else if (mediaCreatedDate >= new DateTime(year, 10, 1) && mediaCreatedDate <= new DateTime(year + 1, 1, 1))
-                    {
-                        MoveFile(octPath, path, mediaCreatedDate.Value);
-                        octCount++;
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Could not move : {path} with date {mediaCreatedDate.Value}");
-                        couldNotMoveCount++;
-                    }
-                }
-            }
-            else
-            {
-                Console.WriteLine($"Could not get file date for {path}");
-                noDateCount++;
-            }
-        }
-        catch (Exception ex)
-        {
-            couldNotMoveCount++;
-            Console.WriteLine($"Error moving {path}: {ex.Message}");
-        }
-    }
-
-    Console.WriteLine();
-    Console.WriteLine("Video Totals");
-    Console.WriteLine($"File Count: {fileCount}");
-    Console.WriteLine($"Vacation File Count: {vacationCount}");
-    Console.WriteLine($"Jan-Mar File Count: {janCount}");
-    Console.WriteLine($"Apr-Jun File Count: {aprCount}");
-    Console.WriteLine($"Jul-Sep File Count: {julCount}");
-    Console.WriteLine($"Oct-Dec File Count: {octCount}");
-    Console.WriteLine($"No Media Date File Count: {noDateCount}");
-    Console.WriteLine($"Could not move File Count: {couldNotMoveCount}");
-    Console.WriteLine($"Total Processed: {vacationCount + janCount + aprCount + julCount + octCount + noDateCount + couldNotMoveCount}");
+    //Flatten(videoDirectoryPath);
+    GroupByQuarterAndVacation(videoDirectoryPath);
+}
+else if (doVideosByMonth)
+{
+    //Flatten(videoDirectoryPath);
+    GroupByMonth(videoDirectoryPath);
 }
 
 if (doPhotos)
 {
-    Console.WriteLine();
-    Console.WriteLine("Doing photos now...");
-
-    int picCount = 0;
-    int picMovedCount = 0;
-    int noPicDateCount = 0;
-
-    var picPath = @$"F:\Pictures\{year}";
-
-    if (reversePhotos)
-    {
-        Console.WriteLine("Reversing photos...");
-
-        foreach (string folder in Directory.GetDirectories(picPath))
-        {
-            foreach (string path in Directory.GetFiles(folder))
-            {
-                try
-                {
-                    picCount++;
-                    File.Move(path, Path.Combine(picPath, Path.GetFileName(path)));
-                    Console.WriteLine($"Moved: {Path.GetFileName(path)} to {picPath}");
-                    picMovedCount++;
-                }
-                catch (Exception ex)
-                {
-                    couldNotMoveCount++;
-                    Console.WriteLine($"Error moving {path}: {ex.Message}");
-                }
-            }
-
-            var left = Directory.GetFiles(folder).Length;
-            if (left == 0)
-            {
-                Console.WriteLine($"Deleting folder {folder}");
-                Directory.Delete(folder);
-            }
-        }
-    }
-    else
-    {
-        // Rename all directories from MMMM to MM_MMMM
-        foreach (string folder in Directory.GetDirectories(picPath))
-        {
-            DateTime folderDate;
-            if (DateTime.TryParseExact(Path.GetFileName(folder), "MMMM", null, System.Globalization.DateTimeStyles.None, out folderDate))
-            {
-                var newFolderName = folderDate.ToString("MM_MMMM");
-                var newFolderPath = Path.Combine(picPath, newFolderName);
-                if (!Directory.Exists(newFolderPath))
-                {
-                    Directory.Move(folder, newFolderPath);
-                    Console.WriteLine($"Renamed folder {folder} to {newFolderPath}");
-                }
-            }
-        }
-
-        foreach (string path in Directory.GetFiles(picPath))
-        {
-            try
-            {
-                picCount++;
-
-                DateTime? takenDate = GetDateTakenDate(path);
-
-                if (!takenDate.HasValue)
-                {
-                    takenDate = GetDateUsingExif(path);
-                }
-
-                if (takenDate.HasValue)
-                {
-                    var month = takenDate.Value.ToString("MM_MMMM");
-                    var monthPath = Path.Combine(picPath, month);
-
-                    if (!Path.Exists(month)) Directory.CreateDirectory(monthPath);
-
-                    File.Move(path, Path.Combine(monthPath, Path.GetFileName(path)));
-                    Console.WriteLine($"Moved: {Path.GetFileName(path)} with date {takenDate} to {monthPath}");
-
-                    picMovedCount++;
-                }
-                else
-                {
-                    Console.WriteLine($"Could not get file date for {path}");
-                    noPicDateCount++;
-                }
-            }
-            catch (Exception ex)
-            {
-                couldNotMoveCount++;
-                Console.WriteLine($"Error moving {path}: {ex.Message}");
-            }
-        }
-    }
-
-    Console.WriteLine();
-    Console.WriteLine("Photo Totals");
-    Console.WriteLine($"File Count: {picCount}");
-    Console.WriteLine($"Moved Count: {picMovedCount}");
-    Console.WriteLine($"Could Not Move Count: {noPicDateCount}");
+    //Flatten(photoDirectoryPath);
+    GroupByMonth(photoDirectoryPath);
 }
+
 
 void MoveFile(string destPath, string path, DateTime mediaCreatedDate)
 {
@@ -301,6 +115,223 @@ DateTime? GetDateUsingExif(string filePath)
     }
 }
 
+bool GroupByQuarterAndVacation(string directoryPath)
+{
+    if (!Path.Exists(directoryPath))
+    {
+        Console.WriteLine($"Path {directoryPath} does not exist");
+        return false;
+    }
+
+    string vacationPath = Path.Combine(directoryPath, "Vacations");
+    string janPath = Path.Combine(directoryPath, "Jan-Mar");
+    string aprPath = Path.Combine(directoryPath, "Apr-Jun");
+    string julPath = Path.Combine(directoryPath, "Jul-Sep");
+    string octPath = Path.Combine(directoryPath, "Oct-Dec");
+    if (!Path.Exists(vacationPath)) Directory.CreateDirectory(vacationPath);
+    if (!Path.Exists(janPath)) Directory.CreateDirectory(janPath);
+    if (!Path.Exists(aprPath)) Directory.CreateDirectory(aprPath);
+    if (!Path.Exists(julPath)) Directory.CreateDirectory(julPath);
+    if (!Path.Exists(octPath)) Directory.CreateDirectory(octPath);
+
+    var filesToMove = Directory.GetFiles(directoryPath).Length;
+    foreach (string path in Directory.GetFiles(directoryPath))
+    {
+        try
+        {
+            fileCount++;
+            var movedToVacation = false;
+
+            DateTime? mediaCreatedDate = GetMediaCreatedDate(path);
+
+            if (!mediaCreatedDate.HasValue)
+            {
+                mediaCreatedDate = GetDateUsingExif(path);
+            }
+
+            if (mediaCreatedDate.HasValue)
+            {
+                foreach (var dateRange in vacationDates)
+                {
+                    if (mediaCreatedDate >= dateRange.Item1 && mediaCreatedDate < dateRange.Item2.AddDays(1) && File.Exists(path))
+                    {
+                        MoveFile(vacationPath, path, mediaCreatedDate.Value);
+                        vacationCount++;
+                        movedToVacation = true;
+                    }
+                }
+
+                if (!movedToVacation && File.Exists(path))
+                {
+                    if (mediaCreatedDate >= new DateTime(year, 1, 1) && mediaCreatedDate < new DateTime(year, 4, 1))
+                    {
+                        MoveFile(janPath, path, mediaCreatedDate.Value);
+                        janCount++;
+                    }
+                    else if (mediaCreatedDate >= new DateTime(year, 4, 1) && mediaCreatedDate <= new DateTime(year, 7, 1))
+                    {
+                        MoveFile(aprPath, path, mediaCreatedDate.Value);
+                        aprCount++;
+                    }
+                    else if (mediaCreatedDate >= new DateTime(year, 7, 1) && mediaCreatedDate <= new DateTime(year, 10, 1))
+                    {
+                        MoveFile(julPath, path, mediaCreatedDate.Value);
+                        julCount++;
+                    }
+                    else if (mediaCreatedDate >= new DateTime(year, 10, 1) && mediaCreatedDate <= new DateTime(year + 1, 1, 1))
+                    {
+                        MoveFile(octPath, path, mediaCreatedDate.Value);
+                        octCount++;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Could not move : {path} with date {mediaCreatedDate.Value}");
+                        couldNotMoveCount++;
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Could not get file date for {path}");
+                noDateCount++;
+            }
+        }
+        catch (Exception ex)
+        {
+            couldNotMoveCount++;
+            Console.WriteLine($"Error moving {path}: {ex.Message}");
+        }
+        finally
+        {
+            var filesLeftToMove = filesToMove - fileCount;
+            Console.WriteLine($"Files left to move: {filesLeftToMove}");
+        }
+    }
+
+    Console.WriteLine();
+    Console.WriteLine("By Quarter/Vcacation Totals");
+    Console.WriteLine($"File Count: {fileCount}");
+    Console.WriteLine($"Vacation File Count: {vacationCount}");
+    Console.WriteLine($"Jan-Mar File Count: {janCount}");
+    Console.WriteLine($"Apr-Jun File Count: {aprCount}");
+    Console.WriteLine($"Jul-Sep File Count: {julCount}");
+    Console.WriteLine($"Oct-Dec File Count: {octCount}");
+    Console.WriteLine($"No Media Date File Count: {noDateCount}");
+    Console.WriteLine($"Could not move File Count: {couldNotMoveCount}");
+    Console.WriteLine($"Total Processed: {vacationCount + janCount + aprCount + julCount + octCount + noDateCount + couldNotMoveCount}");
+
+    return true;
+}
+
+bool GroupByMonth(string directoryPath)
+{
+    Console.WriteLine();
+    Console.WriteLine($"Grouping {directoryPath} by month.");
+
+    int byMonthCount = 0;
+    int byMonthMovedCount = 0;
+    int byMonthNoDateCount = 0;
+
+    // Rename all directories from MMMM to MM_MMMM
+    foreach (string folder in Directory.GetDirectories(directoryPath))
+    {
+        DateTime folderDate;
+        if (DateTime.TryParseExact(Path.GetFileName(folder), "MMMM", null, System.Globalization.DateTimeStyles.None, out folderDate))
+        {
+            var newFolderName = folderDate.ToString("MM_MMMM");
+            var newFolderPath = Path.Combine(directoryPath, newFolderName);
+            if (!Directory.Exists(newFolderPath))
+            {
+                Directory.Move(folder, newFolderPath);
+                Console.WriteLine($"Renamed folder {folder} to {newFolderPath}");
+            }
+        }
+    }
+
+    var filesToMove = Directory.GetFiles(directoryPath).Length;
+    foreach (string path in Directory.GetFiles(directoryPath))
+    {
+        try
+        {
+            byMonthCount++;
+
+            DateTime? takenDate = GetDateTakenDate(path);
+
+            if (!takenDate.HasValue)
+            {
+                takenDate = GetDateUsingExif(path);
+            }
+
+            if (takenDate.HasValue)
+            {
+                var month = takenDate.Value.ToString("MM_MMMM");
+                var monthPath = Path.Combine(directoryPath, month);
+
+                if (!Path.Exists(month)) Directory.CreateDirectory(monthPath);
+
+                File.Move(path, Path.Combine(monthPath, Path.GetFileName(path)));
+                Console.WriteLine($"Moved: {Path.GetFileName(path)} with date {takenDate} to {monthPath}");
+
+                byMonthMovedCount++;
+
+                var filesLeftToMove = filesToMove - byMonthMovedCount;
+                Console.WriteLine($"Files left to move: {filesLeftToMove}");
+            }
+            else
+            {
+                Console.WriteLine($"Could not get file date for {path}");
+                byMonthNoDateCount++;
+            }
+        }
+        catch (Exception ex)
+        {
+            couldNotMoveCount++;
+            Console.WriteLine($"Error moving {path}: {ex.Message}");
+        }
+    }
 
 
+    Console.WriteLine();
+    Console.WriteLine("By Month Totals");
+    Console.WriteLine($"File Count: {byMonthCount}");
+    Console.WriteLine($"Moved Count: {byMonthMovedCount}");
+    Console.WriteLine($"Could Not Move Count: {byMonthNoDateCount}");
 
+    return true;
+}
+
+void Flatten(string directoryPath)
+{
+    Console.WriteLine("Reversing...");
+
+    var fileCount = 0;
+    var fileMovedCount = 0;
+
+    foreach (string folder in Directory.GetDirectories(directoryPath))
+    {
+        foreach (string path in Directory.GetFiles(folder))
+        {
+            try
+            {
+                fileCount++;
+                File.Move(path, Path.Combine(directoryPath, Path.GetFileName(path)));
+                Console.WriteLine($"Moved: {Path.GetFileName(path)} to {directoryPath}");
+                fileMovedCount++;
+            }
+            catch (Exception ex)
+            {
+                couldNotMoveCount++;
+                Console.WriteLine($"Error moving {path}: {ex.Message}");
+            }
+        }
+
+        var left = Directory.GetFiles(folder).Length;
+        if (left == 0)
+        {
+            Console.WriteLine($"Deleting folder {folder}");
+            Directory.Delete(folder);
+        }
+    }
+
+    Console.WriteLine($"Moved {fileMovedCount} of {fileCount} to base folder");
+}
