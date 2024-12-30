@@ -259,6 +259,11 @@ bool GroupByMonth(string directoryPath)
 
             if (!takenDate.HasValue)
             {
+                takenDate = GetMediaCreatedDate(path);
+            }
+
+            if (!takenDate.HasValue)
+            {
                 takenDate = GetDateUsingExif(path);
             }
 
