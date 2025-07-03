@@ -13,9 +13,10 @@ var vacationDates = new List<Tuple<DateTime, DateTime>>()
     new(new(year, 10, 5), new(year, 10, 12))
 };
 
-bool doVideosByQuarter = true;
-bool doPhotos = true;
+bool doVideosByQuarter = false;
+bool doPhotos = false;
 bool doVideosByMonth = false;
+bool fixDatesOnly = true;
 
 int fileCount = 0;
 int vacationCount = 0;
@@ -26,8 +27,8 @@ int octCount = 0;
 int noDateCount = 0;
 int couldNotMoveCount = 0;
 
-string videoDirectoryPath = @$"C:\Users\seanh\Pictures\Video Projects\Stage\THESE_HAVE_BEEN_COMBINED_INTO_MPEGS\{year}";
-string photoDirectoryPath = $@"F:\Pictures\{year}";
+string videoDirectoryPath = @$"C:\Users\seanh\Pictures\Video Projects\Stage\Savannah";
+string photoDirectoryPath = $@"C:\Users\seanh\Pictures\Video Projects\Stage\Savannah";
 
 if (doVideosByQuarter)
 {
@@ -44,6 +45,50 @@ if (doPhotos)
 {
     //Flatten(photoDirectoryPath);
     GroupByMonth(photoDirectoryPath);
+}
+
+if (fixDatesOnly)
+{
+    FixDates(photoDirectoryPath);
+    FixDates(videoDirectoryPath);
+}
+
+void FixDates(string directoryPath)
+{
+    Console.WriteLine($"Fixing dates in {directoryPath}");
+
+    foreach (string path in Directory.GetFiles(directoryPath))
+    {
+        try
+        {
+            DateTime? mediaCreatedDate = GetDateTakenDate(path);
+
+            if (!mediaCreatedDate.HasValue)
+            {
+                mediaCreatedDate = GetMediaCreatedDate(path);
+            }
+
+            if (!mediaCreatedDate.HasValue)
+            {
+                mediaCreatedDate = GetDateUsingExif(path);
+            }
+
+            if (mediaCreatedDate.HasValue)
+            {
+                File.SetCreationTime(path, mediaCreatedDate.Value);
+                File.SetLastWriteTime(path, mediaCreatedDate.Value);
+                Console.WriteLine($"Fixed date for: {Path.GetFileName(path)} to {mediaCreatedDate.Value}");
+            }
+            else
+            {
+                Console.WriteLine($"Could not get date for {path}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fixing date for {path}: {ex.Message}");
+        }
+    }
 }
 
 
