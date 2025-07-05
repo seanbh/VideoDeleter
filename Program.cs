@@ -27,8 +27,8 @@ int octCount = 0;
 int noDateCount = 0;
 int couldNotMoveCount = 0;
 
-string videoDirectoryPath = @$"C:\Users\seanh\Pictures\Video Projects\Stage\Savannah";
-string photoDirectoryPath = $@"C:\Users\seanh\Pictures\Video Projects\Stage\Savannah";
+string videoDirectoryPath = @$"C:\Users\seanh\Pictures\Video Projects\Stage\Savannah\Sunday";
+string photoDirectoryPath = $@"C:\Users\seanh\Pictures\Video Projects\Stage\Savannah\Sunday";
 
 if (doVideosByQuarter)
 {
@@ -75,6 +75,12 @@ void FixDates(string directoryPath)
 
             if (mediaCreatedDate.HasValue)
             {
+                if (mediaCreatedDate.Value.Hour < 4)
+                {
+                    mediaCreatedDate = mediaCreatedDate.Value.Subtract(new TimeSpan(0, 4, 0, 0));
+                    // Adjusting the date to the start of the day if it's before 5 AM
+                    Console.WriteLine($"Subtracting 4 hours from {mediaCreatedDate.Value} for {Path.GetFileName(path)}");
+                }
                 File.SetCreationTime(path, mediaCreatedDate.Value);
                 File.SetLastWriteTime(path, mediaCreatedDate.Value);
                 Console.WriteLine($"Fixed date for: {Path.GetFileName(path)} to {mediaCreatedDate.Value}");
