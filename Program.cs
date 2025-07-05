@@ -28,8 +28,8 @@ int noDateCount = 0;
 int couldNotMoveCount = 0;
 int offsetHours = 4;
 
-string videoDirectoryPath = @$"C:\Users\seanh\Pictures\Video Projects\Stage\Savannah\Test";
-string photoDirectoryPath = $@"C:\Users\seanh\Pictures\Video Projects\Stage\Savannah\Test";
+string videoDirectoryPath = @$"C:\Users\seanh\Pictures\Video Projects\Stage\Charleston";
+string photoDirectoryPath = $@"C:\Users\seanh\Pictures\Video Projects\Stage\Charleston";
 
 if (doVideosByQuarter)
 {
@@ -88,6 +88,11 @@ void FixDates(string directoryPath)
                 File.SetCreationTime(path, mediaCreatedDate.Value);
                 File.SetLastWriteTime(path, mediaCreatedDate.Value);
                 Console.WriteLine($"Fixed date for: {Path.GetFileName(path)} to {mediaCreatedDate.Value}");
+
+                string newFileName = $"{mediaCreatedDate.Value:yyyy-MM-dd_HH-mm-ss}_{Path.GetFileName(path)}";
+                string newFilePath = Path.Combine(directoryPath, newFileName);
+                File.Move(path, newFilePath);
+                Console.WriteLine($"Renamed {Path.GetFileName(path)} to {newFileName}");
             }
             else
             {
