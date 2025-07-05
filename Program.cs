@@ -26,9 +26,10 @@ int julCount = 0;
 int octCount = 0;
 int noDateCount = 0;
 int couldNotMoveCount = 0;
+int offsetHours = 4;
 
-string videoDirectoryPath = @$"C:\Users\seanh\Pictures\Video Projects\Stage\Savannah\Sunday";
-string photoDirectoryPath = $@"C:\Users\seanh\Pictures\Video Projects\Stage\Savannah\Sunday";
+string videoDirectoryPath = @$"C:\Users\seanh\Pictures\Video Projects\Stage\Savannah\Test";
+string photoDirectoryPath = $@"C:\Users\seanh\Pictures\Video Projects\Stage\Savannah\Test";
 
 if (doVideosByQuarter)
 {
@@ -50,7 +51,8 @@ if (doPhotos)
 if (fixDatesOnly)
 {
     FixDates(photoDirectoryPath);
-    FixDates(videoDirectoryPath);
+    if (photoDirectoryPath != videoDirectoryPath)
+        FixDates(videoDirectoryPath);
 }
 
 void FixDates(string directoryPath)
@@ -62,25 +64,27 @@ void FixDates(string directoryPath)
         try
         {
             DateTime? mediaCreatedDate = GetDateTakenDate(path);
+            Console.WriteLine($"Date taken for {Path.GetFileName(path)}: {mediaCreatedDate}");
 
             if (!mediaCreatedDate.HasValue)
             {
                 mediaCreatedDate = GetMediaCreatedDate(path);
+                Console.WriteLine($"Media created date for {Path.GetFileName(path)}: {mediaCreatedDate}");
             }
 
             if (!mediaCreatedDate.HasValue)
             {
                 mediaCreatedDate = GetDateUsingExif(path);
+                Console.WriteLine($"Exif date for {Path.GetFileName(path)}: {mediaCreatedDate}");
+                if (mediaCreatedDate.HasValue)
+                {
+                    Console.WriteLine($"Subtracting 4 hours from {mediaCreatedDate.Value} for {Path.GetFileName(path)}");
+                    mediaCreatedDate = mediaCreatedDate.Value.Subtract(new TimeSpan(0, offsetHours, 0, 0));
+                }
             }
 
             if (mediaCreatedDate.HasValue)
             {
-                if (mediaCreatedDate.Value.Hour < 4)
-                {
-                    mediaCreatedDate = mediaCreatedDate.Value.Subtract(new TimeSpan(0, 4, 0, 0));
-                    // Adjusting the date to the start of the day if it's before 5 AM
-                    Console.WriteLine($"Subtracting 4 hours from {mediaCreatedDate.Value} for {Path.GetFileName(path)}");
-                }
                 File.SetCreationTime(path, mediaCreatedDate.Value);
                 File.SetLastWriteTime(path, mediaCreatedDate.Value);
                 Console.WriteLine($"Fixed date for: {Path.GetFileName(path)} to {mediaCreatedDate.Value}");
