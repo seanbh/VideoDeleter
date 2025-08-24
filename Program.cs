@@ -28,8 +28,8 @@ int noDateCount = 0;
 int couldNotMoveCount = 0;
 int offsetHours = 4;
 
-string videoDirectoryPath = @$"C:\Users\seanh\Pictures\Video Projects\Stage\Charleston";
-string photoDirectoryPath = $@"C:\Users\seanh\Pictures\Video Projects\Stage\Charleston";
+string videoDirectoryPath = @$"C:\Users\seanh\Downloads\Autumn";
+string photoDirectoryPath = $@"C:\Users\seanh\Downloads\Autumn";
 
 if (doVideosByQuarter)
 {
